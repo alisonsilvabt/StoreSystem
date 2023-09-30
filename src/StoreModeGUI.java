@@ -10,12 +10,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.swing.border.EmptyBorder;
 
 public class StoreModeGUI {
     private JFrame frame;
-    private JPanel panel;
-    private JButton addButton;
-    private JButton removeButton;
+    private JPanel mainScreen;
+    private JButton addProductButton;
+    private JButton listProduct;
     private JTextArea cartTextArea;
     private JLabel titleLabel;
     private JLabel productLabel;
@@ -35,9 +36,11 @@ public class StoreModeGUI {
 
     public StoreModeGUI() {
         frame = new JFrame("Store Mode");
-        panel = new JPanel();
-        addButton = new JButton("Add to Cart");
-        removeButton = new JButton("Remove from Cart");
+        JFrame registerFrame = new JFrame("Cadastrar produto");
+        JPanel mainScreen = new JPanel(new GridBagLayout());
+        JPanel buttonColumn = new JPanel();
+        addProductButton = new JButton("Cadastrar produto");
+        listProduct = new JButton("Listar produtos");
         cartTextArea = new JTextArea(10, 30);
         titleLabel = new JLabel("Welcome to Our Store!");
         productLabel = new JLabel("Product:");
@@ -51,6 +54,7 @@ public class StoreModeGUI {
         cartList = new JList<>(cartListModel);
         productMap = new HashMap<>();
         cartContents = new HashMap<>();
+        JPanel registerProductScreen = new JPanel();
         totalPrice = 0.0;
 
         availableProducts = new ArrayList<>();
@@ -85,8 +89,12 @@ public class StoreModeGUI {
         });
 
         // Ação ao clicar no botão "Add to Cart"
-        addButton.addActionListener(new ActionListener() {
+        addProductButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                System.out.println("testee");
+                frame.setVisible(false);
+                registerFrame.setVisible(true);
+                
                 String selectedProductInfo = productList.getSelectedValue();
                 if (selectedProductInfo != null) {
                     Product selectedProduct = productMap.get(selectedProductInfo);
@@ -100,12 +108,13 @@ public class StoreModeGUI {
 
                     // Atualize o preço total
                     updateTotalPrice();
+
                 }
             }
         });
 
         // Ação ao clicar no botão "Remove from Cart"
-        removeButton.addActionListener(new ActionListener() {
+        listProduct.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String selectedCartItem = cartList.getSelectedValue();
                 if (selectedCartItem != null) {
@@ -121,10 +130,99 @@ public class StoreModeGUI {
             }
         });
 
-        frame.add(panel);
+
+        GridBagConstraints gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0; // Coluna
+        gridBagConstraints.gridy = 0; // Linha
+        gridBagConstraints.fill = GridBagConstraints.BOTH; // Preenchimento em ambas as direções
+        gridBagConstraints.weightx = 1.0; // Peso horizontal
+        gridBagConstraints.weighty = 1.0; // Peso vertical
+
+
+        Dimension buttonSize = new Dimension(200, 40);
+        addProductButton.setPreferredSize(buttonSize);
+        listProduct.setPreferredSize(buttonSize);
+        listProduct.setMinimumSize(buttonSize);
+
+        buttonColumn.setLayout(new BoxLayout(buttonColumn, BoxLayout.Y_AXIS));
+        listProduct.setMargin(new Insets(10, 10, 10, 10));
+        JPanel padding = new JPanel();
+        padding.setBorder(new EmptyBorder(10, 10, 10, 10));
+        buttonColumn.add(addProductButton);
+        buttonColumn.add(padding);
+        buttonColumn.add(listProduct);
+        mainScreen.add(buttonColumn);
+ 
+        // Configuration of Register Product Screen
+        registerProductScreen.setLayout(new GridBagLayout());
+        GridBagConstraints gridBagConstraints2 = new GridBagConstraints();
+        JPanel registerContent = new JPanel();
+        registerContent.setLayout(new BoxLayout(registerContent, BoxLayout.Y_AXIS));
+        JLabel registerScreenTitle = new JLabel("Cadastrar produto");
+        registerContent.add(registerScreenTitle);
+        registerProductScreen.add(registerContent);
+        gridBagConstraints2.gridx = 0; // Coluna
+        gridBagConstraints2.gridy = 0; // Linha
+        gridBagConstraints2.fill = GridBagConstraints.BOTH; // Preenchimento em ambas as direções
+        gridBagConstraints2.weightx = 1.0; // Peso horizontal
+        gridBagConstraints2.weighty = 1.0; // Peso vertical
+
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10)); // Layout de grade para organizar os campos
+
+        JLabel nameLabel = new JLabel("Nome do Produto:");
+        JTextField nameTextField = new JTextField();
+
+        JLabel quantityLabel = new JLabel("Quantidade:");
+        JTextField quantityTextField = new JTextField();
+
+        JLabel codeLabel = new JLabel("Código do Produto:");
+        JTextField codeTextField = new JTextField();
+
+        formPanel.add(nameLabel);
+        formPanel.add(nameTextField);
+        formPanel.add(quantityLabel);
+        formPanel.add(quantityTextField);
+        formPanel.add(codeLabel);
+        formPanel.add(codeTextField);
+
+
+        JButton submitButton = new JButton("Cadastrar"); // Botão para enviar o formulário
+
+
+        submitButton.addActionListener(e -> {
+            // Recupere os valores dos campos quando o botão for clicado
+            String productName = nameTextField.getText();
+            String quantity = quantityTextField.getText();
+            String productCode = codeTextField.getText();
+
+            // Você pode fazer algo com os valores, como exibi-los em uma janela de diálogo
+            String message = "Nome do Produto: " + productName + "\n" +
+                             "Quantidade: " + quantity + "\n" +
+                             "Código do Produto: " + productCode;
+            JOptionPane.showMessageDialog(frame, message);
+
+            // Limpe os campos após o envio
+            nameTextField.setText("");
+            quantityTextField.setText("");
+            codeTextField.setText("");
+        });
+
+        registerContent.add(formPanel, BorderLayout.CENTER);
+        registerContent.add(Box.createRigidArea(new Dimension(0, 10)));
+        registerContent.add(submitButton, BorderLayout.SOUTH);
+
+
+        frame.add(mainScreen);
+        registerFrame.add(registerProductScreen);
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+        frame.setLocationRelativeTo(null); 
+
+        registerFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        registerFrame.setLocationRelativeTo(null);
+
     }
 
     // Método para atualizar o rótulo de preço com base no produto selecionado
