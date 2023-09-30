@@ -13,54 +13,74 @@ import java.util.Map;
 import javax.swing.border.EmptyBorder;
 
 public class StoreModeGUI {
+    private JButton backButton;
     private JFrame frame;
-    private JPanel mainScreen;
     private JButton addProductButton;
     private JButton listProduct;
-    private JTextArea cartTextArea;
-    private JLabel titleLabel;
-    private JLabel productLabel;
-    private JLabel quantityLabel;
+    private JPanel productListPanel;
+    private JButton searchButton;
     private JTextField quantityTextField;
     private JTextField searchTextField;
     private JList<String> productList;
     private DefaultListModel<String> productListModel;
     private JLabel priceLabel;
-    private JList<String> cartList; // Lista para o carrinho de compras
-    private DefaultListModel<String> cartListModel; // Modelo da lista
     private Map<String, Product> productMap; // Mapeamento de nomes para produtos
-    private Map<String, Integer> cartContents; // Conteúdo do carrinho (nome do produto e quantidade)
-    private double totalPrice;
+
 
     private List<Product> availableProducts;
 
+    /**
+     * This class represents the graphical user interface for the store mode of the application.
+     * It contains buttons to add and list products, a product list panel, a search bar, and a cart list.
+     * It also has a register product screen for adding new products to the store.
+     */
     public StoreModeGUI() {
         frame = new JFrame("Store Mode");
         JFrame registerFrame = new JFrame("Cadastrar produto");
+        JFrame listProductFrame = new JFrame("Listar produto");
         JPanel mainScreen = new JPanel(new GridBagLayout());
         JPanel buttonColumn = new JPanel();
         addProductButton = new JButton("Cadastrar produto");
         listProduct = new JButton("Listar produtos");
-        cartTextArea = new JTextArea(10, 30);
-        titleLabel = new JLabel("Welcome to Our Store!");
-        productLabel = new JLabel("Product:");
-        quantityLabel = new JLabel("Quantity:");
+        productListPanel = new JPanel(new BorderLayout());
+        searchButton = new JButton("Search");
         quantityTextField = new JTextField(5);
         searchTextField = new JTextField(15);
         productListModel = new DefaultListModel<>();
         productList = new JList<>(productListModel);
         priceLabel = new JLabel("");
-        cartListModel = new DefaultListModel<>(); // Modelo da lista para o carrinho
-        cartList = new JList<>(cartListModel);
         productMap = new HashMap<>();
-        cartContents = new HashMap<>();
         JPanel registerProductScreen = new JPanel();
-        totalPrice = 0.0;
 
         availableProducts = new ArrayList<>();
-        availableProducts.add(new ProductImpl(1, "Product 1", 10.0, "Description 1"));
-        availableProducts.add(new ProductImpl(2, "Product 2", 20.0, "Description 2"));
-        availableProducts.add(new ProductImpl(3, "Product 3", 30.0, "Description 3"));
+        availableProducts.add(new ProductImpl(1, "Camiseta Nike Dri-FIT", 59.90, "Camiseta", 10));
+        availableProducts.add(new ProductImpl(2, "Camiseta Nike Court Dri-FIT", 89.90, "Camiseta", 15));
+        availableProducts.add(new ProductImpl(3, "Camiseta Diamond Block Branco", 64.90, "Camiseta", 4));
+
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.add(searchTextField, BorderLayout.CENTER);
+        searchPanel.add(searchButton, BorderLayout.EAST);
+
+        productListPanel.add(new JScrollPane(productList), BorderLayout.CENTER);
+        productListPanel.add(searchPanel, BorderLayout.NORTH);
+        
+        backButton = new JButton("Voltar");
+        backButton.setPreferredSize(new Dimension(200, 40));
+        backButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                productListPanel.setVisible(false); // Oculta a lista de produtos
+                frame.setVisible(true); // Mostra a tela inicial novamente
+            }
+        });
+        productListPanel.add(backButton, BorderLayout.SOUTH);
+
+        listProduct.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                frame.setVisible(false);
+                productListPanel.setVisible(true); // Exibe a lista de produtos
+                updateProductList(); // Atualiza a lista de produtos com base na pesquisa
+            }
+        });
 
         for (Product product : availableProducts) {
             String productInfo = product.getName() + " - $" + product.getPrice();
@@ -91,42 +111,17 @@ public class StoreModeGUI {
         // Ação ao clicar no botão "Add to Cart"
         addProductButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                System.out.println("testee");
                 frame.setVisible(false);
                 registerFrame.setVisible(true);
-                
-                String selectedProductInfo = productList.getSelectedValue();
-                if (selectedProductInfo != null) {
-                    Product selectedProduct = productMap.get(selectedProductInfo);
-                    int quantity = Integer.parseInt(quantityTextField.getText());
-
-                    // Adicione o produto ao carrinho
-                    addToCart(selectedProduct, quantity);
-
-                    // Atualize a lista do carrinho
-                    updateCartList();
-
-                    // Atualize o preço total
-                    updateTotalPrice();
-
-                }
             }
         });
 
         // Ação ao clicar no botão "Remove from Cart"
         listProduct.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                String selectedCartItem = cartList.getSelectedValue();
-                if (selectedCartItem != null) {
-                    // Remova o produto do carrinho
-                    removeFromCart(selectedCartItem);
-
-                    // Atualize a lista do carrinho
-                    updateCartList();
-
-                    // Atualize o preço total
-                    updateTotalPrice();
-                }
+                frame.setVisible(false);
+                listProductFrame.setVisible(true);
+                updateProductList();
             }
         });
 
@@ -178,8 +173,13 @@ public class StoreModeGUI {
         JLabel codeLabel = new JLabel("Código do Produto:");
         JTextField codeTextField = new JTextField();
 
+        JLabel priceLabel = new JLabel("Preço:");
+        JTextField priceTextField = new JTextField();
+
         formPanel.add(nameLabel);
         formPanel.add(nameTextField);
+        formPanel.add(priceLabel);
+        formPanel.add(priceTextField);
         formPanel.add(quantityLabel);
         formPanel.add(quantityTextField);
         formPanel.add(codeLabel);
@@ -190,16 +190,45 @@ public class StoreModeGUI {
 
 
         submitButton.addActionListener(e -> {
-            // Recupere os valores dos campos quando o botão for clicado
-            String productName = nameTextField.getText();
-            String quantity = quantityTextField.getText();
-            String productCode = codeTextField.getText();
+            try {
+                String productName = nameTextField.getText();
+                String quantity = quantityTextField.getText();
+                String productCode = codeTextField.getText();
+                double price = Double.parseDouble(priceTextField.getText());
 
-            // Você pode fazer algo com os valores, como exibi-los em uma janela de diálogo
-            String message = "Nome do Produto: " + productName + "\n" +
-                             "Quantidade: " + quantity + "\n" +
-                             "Código do Produto: " + productCode;
-            JOptionPane.showMessageDialog(frame, message);
+                if (productName.isEmpty() || quantity.isEmpty() || productCode.isEmpty() || priceTextField.getText().isEmpty()) {
+                    throw new Exception("Todos os campos devem ser preenchidos!");
+                }
+
+                // verify if product already exists
+                for (Product product : availableProducts) {
+                    if (product.getId() == (Integer.parseInt(productCode))) {
+                        throw new Exception("Produto já cadastrado!");
+                    }
+                }
+
+                ProductImpl newProduct = new ProductImpl(
+                        Integer.parseInt(productCode), productName, 
+                        price,"",
+                        Integer.parseInt(quantity));
+                availableProducts.add(newProduct);
+
+                // Você pode fazer algo com os valores, como exibi-los em uma janela de diálogo
+                String message = "Produto cadastrado com sucesso!";
+                JOptionPane.showMessageDialog(frame, message);
+
+            }
+            catch (Exception ex) {
+                String message= "";
+                if (ex instanceof NumberFormatException) {
+                    message = "Os campos 'Quantidade' e 'Código do Produto' devem ser numéricos!";
+                } 
+                message = "Ocorreu um erro ao cadastrar o produto!" + "\n" + ex.getMessage();
+                JOptionPane.showMessageDialog(frame, message);
+                ex.printStackTrace();
+            }
+        
+
 
             // Limpe os campos após o envio
             nameTextField.setText("");
@@ -207,13 +236,23 @@ public class StoreModeGUI {
             codeTextField.setText("");
         });
 
+        // Listar produtos Screen
         registerContent.add(formPanel, BorderLayout.CENTER);
         registerContent.add(Box.createRigidArea(new Dimension(0, 10)));
         registerContent.add(submitButton, BorderLayout.SOUTH);
+        
+        JButton backToMainScreenButton = new JButton("Voltar");
+        backToMainScreenButton.addActionListener((ActionEvent event) -> {
+            frame.setVisible(true);
+            registerFrame.setVisible(false);
+        });
 
+        registerContent.add(backToMainScreenButton);
 
         frame.add(mainScreen);
         registerFrame.add(registerProductScreen);
+        listProductFrame.add(productListPanel);
+        
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
@@ -223,6 +262,32 @@ public class StoreModeGUI {
         registerFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         registerFrame.setLocationRelativeTo(null);
 
+        listProductFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        listProductFrame.setLocationRelativeTo(null);
+
+    }
+
+    
+
+    private void updateProductList() {
+        String searchText = searchTextField.getText().toLowerCase();
+        productListModel.clear(); // Limpa o modelo da lista
+
+        // Adicione rótulos para Nome, Preço e Quantidade com espaçamento adequado
+        String header = String.format("%-40s %-12s %-12s", "Nome", "Preço", "Quantidade");
+        productListModel.addElement(header);
+
+        for (Product product : availableProducts) {
+            String productName = product.getName().toLowerCase();
+
+            // Verifica se o nome do produto contém o texto de pesquisa
+            if (productName.contains(searchText)) {
+                // Use formatação para alinhar corretamente os valores nas colunas
+                String productInfo = String.format("%-40s $%-12.2f %-12d", product.getName(), product.getPrice(),
+                        product.getQuantity());
+                productListModel.addElement(productInfo); // Adiciona o produto ao modelo da lista
+            }
+        }
     }
 
     // Método para atualizar o rótulo de preço com base no produto selecionado
@@ -246,61 +311,6 @@ public class StoreModeGUI {
         } else {
             priceLabel.setText(""); // Limpa o rótulo se nenhum produto estiver selecionado
         }
-    }
-
-
-    private void updateProductList() {
-        String searchText = searchTextField.getText().toLowerCase();
-        productListModel.clear(); // Limpa o modelo da lista
-
-        for (Product product : availableProducts) {
-            String productName = product.getName().toLowerCase();
-
-            // Verifica se o nome do produto contém o texto de pesquisa
-            if (productName.contains(searchText)) {
-                String productInfo = product.getName() + " - $" + product.getPrice();
-                productListModel.addElement(productInfo); // Adiciona o produto ao modelo da lista
-            }
-        }
-    }
-
-            // Método para adicionar um produto ao carrinho
-    private void addToCart(Product product, int quantity) {
-        String productName = product.getName();
-        if (cartContents.containsKey(productName)) {
-            int existingQuantity = cartContents.get(productName);
-            cartContents.put(productName, existingQuantity + quantity);
-        } else {
-            cartContents.put(productName, quantity);
-        }
-    }
-
-    // Método para remover um produto do carrinho
-    private void removeFromCart(String cartItem) {
-        cartContents.remove(cartItem);
-    }
-
-    // Método para atualizar a lista do carrinho
-    private void updateCartList() {
-        cartListModel.clear();
-        for (Map.Entry<String, Integer> entry : cartContents.entrySet()) {
-            String productName = entry.getKey();
-            int quantity = entry.getValue();
-            String cartItemInfo = productName + " - Quantity: " + quantity + " - Total Price: $" + (productMap.get(productName).getPrice() * quantity);
-            cartListModel.addElement(cartItemInfo);
-        }
-    }
-
-    // Método para atualizar o preço total
-    private void updateTotalPrice() {
-        totalPrice = 0.0;
-        for (Map.Entry<String, Integer> entry : cartContents.entrySet()) {
-            String productName = entry.getKey();
-            int quantity = entry.getValue();
-            totalPrice += productMap.get(productName).getPrice() * quantity;
-        }
-        // Atualize o rótulo de preço total
-        priceLabel.setText("Total Price: $" + totalPrice);
     }
 
     public static void main(String[] args) {

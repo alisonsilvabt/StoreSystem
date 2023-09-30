@@ -3,12 +3,13 @@ public class ProductImpl implements Product {
     private String name;
     private double price;
     private String description;
+    private int quantity;
 
-    public ProductImpl(int id, String name, double price, String description) {
+    public ProductImpl(int id, String name, double price, String description, int quantity) {
         this.id = id;
         this.name = name;
         this.price = price;
-        this.description = description;
+        this.quantity = quantity;
     }
 
     @Override
@@ -27,9 +28,7 @@ public class ProductImpl implements Product {
     }
 
     @Override
-    public String getDescription() {
-        return description;
+    public int getQuantity() {
+        return quantity;
     }
-
-    // Outros métodos relacionados a produtos, se necessário
 }
